@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: node-api-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: node-api
+  template:
+    metadata:
+      labels:
+        app: node-api
+    spec:
+      containers:
+        - name: node-api
+          image: lucascalecrim/node-api:lts  # <--- Usaremos a tag 'lts'
+          ports:
+            - containerPort: 3000
+          env:
+            - name: PG_USER
+              value: "postgres"
+            - name: PG_HOST
+              value: "postgres-service"
+            - name: PG_DATABASE
+              value: "api-db"
+            - name: PG_PASSWORD
+              value: "admin"
+            - name: PG_PORT
+              value: "5432"
