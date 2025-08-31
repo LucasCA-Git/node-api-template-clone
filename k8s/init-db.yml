@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: create-users-table
+spec:
+  restartPolicy: OnFailure
+  containers:
+    - name: create-users-table
+      image: postgres:14
+      env:
+        - name: PGDATABASE
+          value: "api-db"
+        - name: PGUSER
+          value: "postgres"
+        - name: PGPASSWORD
+          value: "admin"
+        - name: PGHOST
+          value: "postgres-service"
+      command: ["sh", "-c"]
+      args:
+        - |
+          echo "Aguardando Postgres"
+          until pg_isready -h $PGHOST -p 5432 -U $PGUSER; do
+            sleep 2
+          done
+          echo "Postgres disponível! Criando tabela users"
+          psql -c "CREATE TABLE IF NOT EXISTS users (
+            id SERIAL PRIMARY KEY,
+            name VARCHAR(255) NOT NULL,
+            email VARCHAR(255) UNIQUE NOT NULL,
+            password VARCHAR(255) NOT NULL,
+            created_at TIMESTAMPTZ DEFAULT NOW()
+          );"
