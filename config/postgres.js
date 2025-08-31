@@ -25,6 +25,12 @@ class PostgreSQLManager {
         return PostgreSQLManager.instance
     }
 
+    // Adicione esta nova função.
+    // Ela não precisa de lógica, apenas de existir para evitar o erro.
+    initialize() {
+        return this;
+    }
+
     getPool() {
         if (!this.pool) {
             throw new Error('PostgresSQL não inicializado. Chame initialize() primeiro.')
