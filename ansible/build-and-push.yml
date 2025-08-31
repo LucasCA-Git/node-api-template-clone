@@ -1,11 +1,16 @@
----
 - name: Automatizar Build e Push da Imagem Docker
   hosts: localhost
   gather_facts: no
   vars:
     image_name: "lucascalecrim/node-api"
-    image_tag: "lts" 
+    image_tag: "lts"
   tasks:
+    - name: Garantir que a pasta logs existe
+      ansible.builtin.file:
+        path: ../logs
+        state: directory
+        mode: '0755'
+
     - name: Construir e publicar a imagem Docker
       community.docker.docker_image:
         name: "{{ image_name }}"

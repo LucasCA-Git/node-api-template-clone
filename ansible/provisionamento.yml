@@ -1,3 +1,9 @@
+  pre_tasks:
+    - name: Garantir que a pasta logs existe
+      ansible.builtin.file:
+        path: ../logs
+        state: directory
+        mode: '0755'
 ---
 - name: Provisionamento de Ambiente DevOps
   hosts: all
