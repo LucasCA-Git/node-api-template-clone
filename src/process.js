@@ -1,47 +1,39 @@
 const postgres = require('../config/postgres')
-const rethinkdb = require('../config/rethinkdb')
-const redis = require('../config/redis')
 const socket = require('./sockets/SocketMananger')
+const logger = require('../src/utils/logger')
 
 async function clean() {
     try {
-        console.log('Called Clean')
+        logger.info('Called Clean')
         await postgres.close();
-        console.log('Database pool has been closed');
-        
-        await rethinkdb.close()
-        console.log('RethinkDB has been closed');
-
-        if (redis.getClient() && redis.connected)
-            await redis.getClient().disconnect();
-        console.log('Redis has been closed');
+        logger.info('Database pool has been closed');
 
         if (socket.getIO()) {
             socket.getIO().close()
-            console.log('Todas as conexões Socket.IO foram fechadas.');
+            logger.info('All Socket.IO connections have been closed.');
         }
-        
+
     } catch (err) {
-        console.error(err)
+        logger.error(err)
     }
 }
 
 process.on('SIGINT', async () => {
-    console.error('SIGINT')
+    logger.error('SIGINT')
     await clean()
     process.exit(0);
 });
 
 process.on('SIGTERM', async () => {
-    console.error('SIGTERM')
+    logger.error('SIGTERM')
     await clean()
     process.exit(0);
 })
 
 process.on('uncaughtException', async (err) => {
-    console.error('Unhandled exception:', err);
-  });
-  
+    logger.error('Unhandled exception:', err);
+});
+ 
 process.on('unhandledRejection', async (reason, promise) => {
-    console.error('Unhandled rejection at:', promise, 'reason:', reason);
+    logger.error('Unhandled rejection at:', promise, 'reason:', reason);
 });
