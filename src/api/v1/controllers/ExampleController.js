@@ -29,6 +29,36 @@ class ExampleController {
         }
     }
 
+        // Lista todos os usuários
+        async listUsers(req, res) {
+            try {
+                const users = await UserService.listUsers();
+                res.status(200).json(ResponseFormatter.success(users));
+            } catch (error) {
+                ResponseFormatter.responseError(res, error);
+            }
+        }
+
+        // Atualiza um usuário
+        async updateUser(req, res) {
+            try {
+                const updatedUser = await UserService.updateUser(req.params.id, req.body);
+                res.status(200).json(ResponseFormatter.success(updatedUser));
+            } catch (error) {
+                ResponseFormatter.responseError(res, error);
+            }
+        }
+
+        // Deleta um usuário
+        async deleteUser(req, res) {
+            try {
+                const result = await UserService.deleteUser(req.params.id);
+                res.status(200).json(ResponseFormatter.success(result));
+            } catch (error) {
+                ResponseFormatter.responseError(res, error);
+            }
+        }
+
     async example(req, res) {
         try {
             const example = await UserService.example(req.params.id)

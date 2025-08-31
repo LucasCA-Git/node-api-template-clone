@@ -12,36 +12,29 @@ app.use(morgan('tiny'))
 // Carregar certificados SSL
 const server = require('./ssl')(app)
 
-// Inciializa Managers
+// Inicia Managers
 const SocketManager = require('./sockets/SocketMananger')
 SocketManager.initialize(server)
 
 const PostgresSQLManager = require('../config/postgres')
 
-const RethinkDBManager = require('../config/rethinkdb')
-RethinkDBManager.initialize()
-
-
-const RedisManager = require('../config/redis');
-RedisManager.initialize()
-
 // Middleware
 const ErrorMiddleware = require('./middlewares/errorMiddleware');
 
 // Routes
-const routes = require('./routes').initialize(app)
+const routes = require('./routes');
+app.use(routes); // AQUI ESTÁ A ÚNICA MUDANÇA NA LÓGICA DO SEU ARQUIVO
 
 // Inicia servidor na porta definida no .env 
 server.listen(process.env.PORT, () => {
-    logger.info(`Server started with port ${process.env.PORT}`)
-    const RethinkDBManager2 = require('../config/rethinkdb')
+    logger.info(`Server started with port ${process.env.PORT}`)
 })
 
-app.get("*", ErrorMiddleware.error404, (req, res) => {
-    next()
+app.get("*", ErrorMiddleware.error404, (req, res, next) => {
+    next()
 })
-app.post("*", ErrorMiddleware.error404, (req, res) => {
-    next()
+app.post("*", ErrorMiddleware.error404, (req, res, next) => {
+    next()
 })
 
 module.exports = app
