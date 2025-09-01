@@ -9,6 +9,7 @@ commands = [
     "minikube start --driver=kvm2",
     "kubectl create configmap node-api-env --from-file=.env --dry-run=client -o yaml | kubectl apply -f -",
     "kubectl apply -f k8s/",
+    "minikube status",
     "watch -n 1 kubectl get pods"
 ]
 
