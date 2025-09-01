@@ -1,13 +1,32 @@
 const { Pool } = require("pg");
-const logger = require('../src/utils/logger')
+const logger = require('../src/utils/logger');
 
 class PostgreSQLManager {
-    constructor(config) {
-        if (!process.env.POSTGRESS_ENABLE) {
-            logger.warn('PostgresSQL desabilitado.')
-            return
+    constructor() {
+        if (PostgreSQLManager.instance) {
+            return PostgreSQLManager.instance;
         }
-        if (!PostgreSQLManager.instance || PostgreSQLManager.instance.pool) {
+        
+        this.isEnabled = false;
+        this.pool = null;
+        this.isInitialized = false;
+        PostgreSQLManager.instance = this;
+    }
+
+    async initialize(config) {
+        if (this.isInitialized) {
+            return this;
+        }
+
+        this.isEnabled = process.env.POSTGRES_ENABLE === 'true';
+        
+        if (!this.isEnabled) {   
+            logger.warn('PostgreSQL desabilitado.');
+            this.isInitialized = true;
+            return this;
+        }
+
+        try {
             this.pool = new Pool(config || {
                 user: process.env.PG_USER,
                 host: process.env.PG_HOST,
@@ -16,45 +35,63 @@ class PostgreSQLManager {
                 port: process.env.PG_PORT,
                 max: 1200,
                 idleTimeoutMillis: 15000
-            }); ;
-            PostgreSQLManager.instance = this
-            logger.info(`Pool PostgresSQL inicializado.`)
-        } else {
-            logger.warn('PostgresSQL já inicializado.')
-        }
-        return PostgreSQLManager.instance
-    }
+            });
 
-    // Adicione esta nova função.
-    // Ela não precisa de lógica, apenas de existir para evitar o erro.
-    initialize() {
+            // Testa a conexão
+            const client = await this.pool.connect();
+            await client.query('SELECT 1');
+            client.release();
+
+            this.isInitialized = true;
+            logger.info('Pool PostgreSQL inicializado com sucesso.');
+        } catch (error) {
+            logger.error('Erro ao inicializar PostgreSQL:', error.message);
+            throw error;
+        }
+
         return this;
     }
 
     getPool() {
-        if (!this.pool) {
-            throw new Error('PostgresSQL não inicializado. Chame initialize() primeiro.')
+        if (!this.isInitialized) {
+            throw new Error('PostgreSQL não inicializado. Chame initialize() primeiro.');
         }
-        return this.pool
+        if (!this.isEnabled || !this.pool) {
+            throw new Error('PostgreSQL não está habilitado ou inicializado.');
+        }
+        return this.pool;
     }
 
     async query(text, params) {
+        if (!this.isEnabled || !this.pool) {
+            throw new Error('PostgreSQL não está habilitado ou inicializado.');
+        }
+        
         const client = await this.pool.connect();
         try {
-          const res = await client.query(text, params);
-          return res;
-        } catch (err) {
-          throw err;
+            return await client.query(text, params);
         } finally {
-          client.release();
+            client.release();
         }
     }
 
     async close() {
-        await this.pool.end();
+        if (this.pool) {
+            await this.pool.end();
+            this.isInitialized = false;
+            this.pool = null;
+            logger.info("Pool PostgreSQL fechado.");
+        }
+    }
+
+    getIsEnabled() {
+        return this.isEnabled;
+    }
+
+    getIsInitialized() {
+        return this.isInitialized;
     }
 }
 
-const instance = new PostgreSQLManager()
-Object.freeze(instance)
-module.exports = instance;
+// Exporta a classe para ser instanciada quando necessário
+module.exports = PostgreSQLManager;
