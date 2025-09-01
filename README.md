@@ -1,322 +1,172 @@
-# Node.js API Template
+# **Projeto Node.js com PostgreSQL e Kubernetes**
 
-Este repositório é uma base para o desenvolvimento de projetos de backend em Node.js, criado por **Pablo Ruan** ([@pabloruan0710](https://github.com/pabloruan0710)). O projeto oferece uma estrutura modular e escalável, com integração opcional para PostgreSQL, Socket.io, RethinkDB e Redis, além de funcionalidades de autenticação com JWT e cache automático utilizando middleware com Redis.
+Este projeto é uma aplicação de API Node.js utilizando JavaScript e um banco de dados PostgreSQL, orquestrados com Kubernetes e automatizados com Ansible. O processo atual foca na inicialização e no "seeding" do banco de dados, sem a funcionalidade de CRUD Via API.
 
-Integrações já adicionadas:
-- Banco de dados SQL (Postregres)
-- Banco de dados NoSql (Rethinkdb)
-- Permite conexão com Socket.io (mesma porta do server express definido no .env)
-- Cache com Redis
+## **1\. Tecnologias**
 
-## Instalação
+* **Node.js**: Ambiente de execução da API.  
+* **PostgreSQL**: Banco de dados relacional.  
+* **Docker**: Criação e gestão de contêineres.  
+* **Kubernetes**: Orquestração e gerenciamento dos contêineres.  
+* **Minikube**: Ferramenta para criar um cluster Kubernetes local.  
+* **Ansible**: Automação do processo de implantação.
 
-Necessário `Node >= v16.10.0`
+## **2\. Estrutura da Aplicação**
 
-1. Clone o repositório:
+* **`src/`**: Contém o código-fonte da aplicação Node.js.  
+  * `models/sql/UserRepository.js`: Lógica para interagir com o PostgreSQL e popular a tabela de usuários.  
+  * `services/UserService.js`: Lógica de negócio, como o registro de usuários.  
+  * `add-users.js`: Script para popular o banco de dados com dados iniciais.  
+* **`config/`**: Arquivos de configuração.  
+* **`.env`**: Variáveis de ambiente sensíveis.  
+* **`k8s/`**: Manifestos do Kubernetes para implantação.  
+* **`ansible/`**: Playbooks do Ansible para automação.  
+* **`run_all.py`**: Script para automatizar a implantação completa.
 
-   ```bash
-   git clone https://github.com/pabloruan0710/node-api-template.git
-   
-   # Acessar pasta do projeto
-   cd node-api-template
-   
-   # Instale as dependências
-   npm install
+## **3\. Manifestos do Kubernetes (`k8s/`)**
 
-   # Configure o arquivo .env conforme necessário
-   cp .env.example .env
+Os arquivos YAML na pasta `k8s/` definem como os componentes da sua aplicação (banco de dados e API) serão executados no cluster Kubernetes.
 
-   # Defina a porta do servidor no .env, ex: PORT=4000
-   PORT=
+* **`app-deployment.yml`**: Cria um **Deployment** que gerencia a API Node.js. Ele garante uma réplica do pod e define a imagem Docker e as variáveis de ambiente necessárias.  
+* **`app-service.yml`**: Define um **Service** do tipo `NodePort` que expõe a API na porta `30000` do nó, tornando-a acessível externamente.  
+* **`db-deployment.yml`**: Cria um **Deployment** para o banco de dados PostgreSQL, definindo a imagem, as variáveis de ambiente e um `PersistentVolumeClaim` para garantir a persistência dos dados.  
+* **`db-service.yml`**: Define um **Service** para o banco de dados, permitindo que a API se conecte a ele dentro do cluster.  
+* **`init-db.yml`**: Cria um **Pod** de inicialização com uma política de reinício `OnFailure`. Este pod aguarda o banco de dados e executa o comando `psql` para criar a tabela de `users`.
 
-   # Inicie o servidor
-   npm run dev
+## **4\. Automação com Ansible**
 
-   # Testando o serviço, abra o browser e digite
-   http://localhost:4000/api/v1/example/test
+O Ansible é usado para automatizar o processo de implantação com "playbooks".
 
-   #### Opcional: Caso queira republicar em outro repositório do git.
-   # 1.	Vá para o GitHub e crie um novo repositório.
-   # 2.	Não inicialize o novo repositório com um README, .gitignore ou qualquer outra configuração, pois você estará enviando o conteúdo do repositório clonado.
-   # 3.	Copie a URL do novo repositório (algo como https://github.com/seu-usuario/novo-repositorio.git).
-   git remote remove origin
-   git remote add origin https://github.com/seu-usuario/novo-repositorio.git
-   git push -u origin main
+* **`ansible/provisionamento.yml`**: Este playbook aplica os manifestos do Kubernetes na ordem correta: primeiro o banco de dados e seu serviço, depois o pod de inicialização e, por fim, a API e seu serviço.  
+* **`ansible/build-and-push.yml`**: (Não detalhado aqui) Este playbook é responsável por construir a imagem Docker da sua aplicação e enviá-la para um registro de contêiner.
 
-   ```
+## **5\. Como Fazer Tudo Funcionar?**
 
-## Criação de módulo
+Para iniciar o projeto do zero, basta executar os scripts de automação.
 
-É possível criar um novo módulo a partir de um comando, eliminando necessidade de criar todos os arquivos (services, controller, respositories, rotues) na mão, basta executar o seguinte comando
+### **Instalação dos Requisitos**
 
-1. Criando módulo:
+Para instalar todas as dependências necessárias, execute o script `install_all.py` na raiz do projeto.
 
-   ```bash
-   npm run generate <NomeDoModulo> <VersaoServico> <NoSQL>
-   # Exemplo: npm run generate User v1 false
-   ```
+- **Instala todas as dependências e ferramentas**  
+- **Necessita do Python 3 e do pip instalados.**
+```py
+import subprocess
 
-   - **NomeDoModulo**: Nome do seu novo módulo, ex: User
-   - **VersaoServico**: Versão do serviço, ex: v1, v2, v3 (usado para versionamento e **deve compor o endpoint**)
-   - **NoSql**: por padrão o serviço é criado com o Repository SQL (postrgres), caso queira usar o RethinkDB, use true para esse parametro
+commands \= \[  
+    # Instala pacotes essenciais  
+    "sudo apt install \-y docker.io ansible conntrack kubectl "  
+    "qemu-kvm libvirt-daemon-system libvirt-clients virt-manager bridge-utils "  
+    "curl wget apt-transport-https ca-certificates software-properties-common",
 
-## Funcionalidades
+    # Instala Minikube  
+    "curl \-LO \[https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64\](https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64)",  
+    "sudo install minikube-linux-amd64 /usr/local/bin/minikube",  
+    "rm minikube-linux-amd64",
 
-- Estrutura organizada em múltiplas pastas (routes, controllers, services, repositories, etc.).
-- Suporte para banco de dados **PostgreSQL** e **RethinkDB** (opcionais).
-- Integração com **Socket.io** para comunicação em tempo real (opcional).
-- Cache automático usando **Redis** como middleware.
-- Autenticação segura utilizando **JSON Web Tokens (JWT)**.
-- Hashing de senhas com **bcrypt**.
-- Logging avançado com **Winston** e **Morgan**.
-- Variáveis de ambiente gerenciadas com **dotenv**.
-- Suporte opcional para reinicialização automática com **nodemon** durante o desenvolvimento.
+    # Adiciona o usuário ao grupo docker para evitar 'sudo'  
+    "sudo usermod \-aG docker $USER"  
+\]
 
-## Tecnologias Utilizadas
-
-- **Node.js**: Plataforma de execução de código JavaScript no servidor.
-- **Express**: Framework web para Node.js que facilita o desenvolvimento de APIs REST.
-- **PostgreSQL**: Banco de dados relacional (opcional).
-- **RethinkDB**: Banco de dados NoSQL orientado a documentos e voltado para aplicativos em tempo real (opcional).
-- **Redis**: Armazenamento de dados em memória usado para cache e gerenciamento de sessões.
-- **Socket.io**: Biblioteca para comunicação em tempo real (opcional).
-- **JWT (jsonwebtoken)**: Padrão aberto para autenticação e troca segura de informações.
-- **bcrypt**: Biblioteca para hashing de senhas.
-- **Winston** e **Morgan**: Bibliotecas para registro de logs.
-- **dotenv**: Carrega variáveis de ambiente de um arquivo `.env`.
-
-## Estrutura de Pastas
-
-A arquitetura do projeto é dividida nas seguintes pastas principais:
-
-- **/controllers**: Lida com a lógica de requisição e resposta.
-- **/services**: Contém a lógica de negócios.
-- **/repositories**: Comunica diretamente com os repositórios (SQL ou NOSQL).
-- **/routes**: Define as rotas da API e mapeia para os controladores apropriados.
-- **/middlewares**: Middlewares personalizados, incluindo o middleware de cache com Redis.
-- **/config**: Configurações e variáveis de ambiente.
-- **/models**: Modelos para interação com bancos de dados.
-
+for cmd in commands:  
+    print(f"\\nExecutando: {cmd}\\n{'='\*40}")  
+    subprocess.run(cmd, shell=True)
+ 
+subprocess.run(\["pip", "install", "kubernetes", "openshift", "docker"\])  
+subprocess.run(\["ansible-galaxy", "collection", "install", "community.general"\])
 ```
-/project-root
-│
-├── /config             # Configurações da aplicação
-│   ├── /env            # Configurações específicas do ambiente
-│   │   ├── development.js
-│   │   ├── production.js
-│   │   └── test.js
-│   ├── db.js           # Configuração do banco de dados (Postgres e NoSQL)
-│   └── socket.js       # Configuração do WebSocket
-│
-├── /src                # Código-fonte principal
-│   ├── /api            # Endpoints e controladores da API
-│   │   ├── /v1         # Versão 1 da API
-│   │   │   ├── /controllers
-│   │   │   ├── /routes
-│   │   │   └── index.js
-│   │   └── /v2         # Versão 2 da API (se necessário)
-│   │       ├── /controllers
-│   │       ├── /routes
-│   │       └── index.js
-│   ├── /models         # Modelos do banco de dados (PostgreSQL e NoSQL)
-│   │   ├── /sql        # Modelos SQL (Postgres)
-│   │   └── /nosql      # Modelos NoSQL (MongoDB)
-│   ├── /services       # Serviços de negócios e lógica de aplicação
-│   ├── /sockets        # Lógica do WebSocket
-│   ├── /middlewares    # Middlewares da aplicação
-│   ├── /utils          # Utilitários e helpers
-│   └── server.js       # Configuração e inicialização do servidor
-│
-├── /migrations         # Migrações de banco de dados (SQL e NoSQL)
-│
-├── /tests              # Testes (unitários, integração)
-│   ├── /unit           # Testes unitários
-│   ├── /integration    # Testes de integração
-│   └── /e2e            # Testes end-to-end
-│
-├── /scripts            # Scripts utilitários e automação
-│
-├── /docs               # Documentação do projeto
-│
-├── .env                # Variáveis de ambiente (desenvolvimento)
-├── .gitignore          # Arquivos e pastas a serem ignorados pelo Git
-├── package.json        # Dependências e scripts npm
-└── README.md           # Documentação básica do projeto
+### **Execução Automática**
 
+Para construir, implantar e iniciar tudo, basta executar o script `run_all.py` que vai cuidar de todos os processos em sequência.
+
+# Script para gerenciar a implantação  
+```py
+import subprocess
+
+commands \= \[  
+    "minikube delete \--all",  
+    "docker system prune \-a \--volumes \-f",  
+    "docker build \-t lucascalecrim/node-api:lts .",  
+    "docker push lucascalecrim/node-api:lts",  
+    "ansible-playbook \-i ansible/hosts.ini ansible/build-and-push.yml",  
+    "minikube start \--driver=kvm2",  
+    "kubectl create configmap node-api-env \--from-file=.env \--dry-run=client \-o yaml | kubectl apply \-f \-",  
+    "kubectl apply \-f k8s/",  
+    "minikube status",  
+    "watch \-n 1 kubectl get pods"  
+\]
+
+for cmd in commands:  
+    print(f"\\nExecutando: {cmd}\\n{'='\*40}")  
+    result \= subprocess.run(cmd, shell=True)  
+    if result.returncode \!= 0:  
+        print(f"Erro ao executar: {cmd}")  
+        break
+```
+# Alimentação do banco via js 
+
+Apos verificar tudo corretamente é importante verifica os ips dos serviços 
+com
+
+```bash
+minikube service list
+minikube service postgres-service --url
+```
+![Busca IP](static/9.png)
+
+È valido ressaltar o pol ela é de acordo com o ip do do serviço do postgres
+então é de extrema importancia colocar esse ip para seed no 
+```bash
+[Os testes estão na raiz do projeto]
+nodejs test-connection.js
+nodejs test-postgres.js
+
+[O seed e a busca estão em /src]
+nodejs add-user.js
+node query.js
+```
+- o que precisa ser alterado de acordo com o ip são essas informações de todos os scripts acima
+**A depender do ip e porta**
+
+```js
+const pool = new Pool({
+        host: '192.168.61.216', //Aqui para o ip do postgres 
+        port: 31748, // aqui para a porta
+        user: 'postgres',
+        password: 'admin', 
+        database: 'api-db',
+    });
 ```
 
-## Explicação de pastas
-
-<details>
-<summary>/config</summary>
-    <blockquote>
-     Contém todas as configurações da aplicação, incluindo arquivos específicos para diferentes ambientes (desenvolvimento, produção, teste). O arquivo db.js gerencia a conexão com os bancos de dados PostgreSQL e NoSQL, enquanto socket.js configura os WebSockets.
-    </blockquote>
-</details>
-
-<details>
-<summary>/src/api</summary>
-<blockquote>
-Organiza as rotas e controladores da API em versões (v1, v2, etc.), facilitando a manutenção e a evolução da API. Cada versão possui seus próprios controladores e rotas
-</blockquote>
-</details>
-
-<details>
-<summary>/src/models</summary>
-<blockquote>
-Separa os modelos do banco de dados SQL e NoSQL, garantindo que as diferenças entre os dois tipos de bancos de dados sejam gerenciadas de forma clara.
-</blockquote>
-</details>
-
-<details>
-<summary>/src/services</summary>
-<blockquote>
-Contém a lógica de negócios da aplicação. Isso ajuda a manter os controladores leves e focados em lidar com requisições e respostas.
-</blockquote>
-</details>
-
-<details>
-<summary>/src/sockets</summary>
-<blockquote>
-Contém a lógica e os eventos dos WebSockets. Isso inclui o gerenciamento de conexões e a comunicação em tempo real.
-</blockquote>
-</details>
-
-<details>
-<summary>/src/middlewares</summary>
-<blockquote>
-Inclui middlewares que processam as requisições antes de chegarem aos controladores, como autenticação, autorização, e validação de dados.
-</blockquote>
-</details>
-
-<details>
-<summary>/src/utils</summary>
-<blockquote>
-Funções utilitárias e helpers que são reutilizadas em diferentes partes do código.
-</blockquote>
-</details>
-
-<details>
-<summary>/migrations</summary>
-<blockquote>
-Contém scripts de migração para o banco de dados SQL e, se necessário, scripts para ajustar o banco NoSQL.
-</blockquote>
-</details>
-
-<details>
-<summary>/tests</summary>
-<blockquote>
-Organizado em testes unitários, de integração e end-to-end (E2E), proporcionando uma estrutura clara para diferentes tipos de testes.
-</blockquote>
-</details>
-
-<details>
-<summary>/scripts</summary>
-<blockquote>
-Scripts que automatizam tarefas, como inicializar o banco de dados, executar linting, ou deploy.
-</blockquote>
-</details>
-
-<details>
-<summary>/docs</summary>
-<blockquote>
-Documentação detalhada do projeto, incluindo especificações de API, configuração do ambiente de desenvolvimento, e outras informações relevantes.
-</blockquote>
-</details>
-
-## Considerações para Escalabilidade
-- <b>Modularidade</b>: A estrutura modular facilita a adição de novos recursos sem impactar a base de código existente. Por exemplo, se você adicionar uma nova funcionalidade no WebSocket, ela pode ser isolada dentro da pasta /src/sockets.
-
-- <b>Microserviços</b> (Opcional): Se o projeto crescer significativamente, você pode considerar dividir a aplicação em microserviços, onde cada serviço tem seu próprio repositório e estrutura semelhante à descrita acima.
-
-- <b>Autenticação e Segurança</b>: Garanta que há uma abordagem centralizada para autenticação e autorização, possivelmente implementada nos middlewares.
-
-## Versionamento de Serviços
-
-```
-/project-root
-│
-├── /src
-│   ├── /api
-│   │   ├── /v1
-│   │   │   ├── /controllers
-│   │   │   │   └── userController.js
-│   │   │   ├── /routes
-│   │   │   │   └── userRoutes.js
-│   │   │   └── index.js
-│   │   └── /v2
-│   │       ├── /controllers
-│   │       │   └── userController.js
-│   │       ├── /routes
-│   │       │   └── userRoutes.js
-│   │       └── index.js
-│   └── server.js
-│
-└── package.json
-```
-
-## Fluxo de Requests
-
-```
-User Request
-      |
-    Routes
-      |
-  Controller
-      |
-   Service
-      |
-   Repository
-      |
-SQL or NoSQL Database
-      |
-   Repository
-      |
-   Service
-      |
-  Controller
-      |
-User Response
-```
-
-1.	User Request: A requisição do usuário chega à aplicação.
-2.	Routes: A requisição é direcionada para a rota correspondente.
-3.	Controller: A rota encaminha a requisição para o controlador. O controlador é responsável por receber a requisição e determinar qual serviço deve ser chamado.
-4.	Service: O controlador chama o serviço apropriado. O serviço contém a lógica de negócios e decide qual repositório deve ser acessado para obter ou manipular os dados.
-5.	Repository: O serviço chama o repositório correspondente. O repositório é responsável por interagir com o banco de dados (SQL ou NoSQL) para realizar operações como buscar, inserir, atualizar ou deletar dados.
-6.	Database (SQL/NoSQL): O repositório executa a consulta ao banco de dados (SQL ou NoSQL).
-7.	Repository Response: Após a consulta ao banco de dados, o repositório retorna os dados para o serviço.
-8.	Service Response: O serviço processa os dados recebidos do repositório, aplica qualquer lógica de negócios necessária e, em seguida, retorna a resposta para o controlador.
-9.	Controller Response: O controlador recebe a resposta do serviço e formata a resposta final (se necessário) para enviar de volta ao cliente.
-10.	User Response: A resposta é enviada ao usuário.
+# Teste de conexão e integração com o Postgres
+- os testes podem ser executado na raiz do projeto em 
+**nodejs test-connection.js**
+**nodejs test-postgres.js**
 
 
-## Design Patterns
-- Repository Pattern
-- Service Layer Pattern
-- Factory Pattern
-- Middleware Pattern
-- Observer Pattern
 
-## Bibliotecas
+# Projeto Funcionando, minikube e conexão com postgres
+- Deletando minikube antigo e zerando cache para confirmar a criação de um novo (está no script)
 
-- ([pg](https://www.npmjs.com/package/pg))
-- ([jsonwebtoken](https://www.npmjs.com/package/jsonwebtoken))
-- ([bcrypt](https://www.npmjs.com/package/bcrypt))
-- ([express > 4.16.0](https://www.npmjs.com/package/express))
-- ([socket.io](https://www.npmjs.com/package/socket.io))
-- ([rethinkdb](https://www.npmjs.com/package/rethinkdb))
-- ([winston](https://www.npmjs.com/package/winston))
-- ([morgan](https://www.npmjs.com/package/morgan))
-- ([nodemon](https://www.npmjs.com/package/nodemon))
-- ([dotenv](https://www.npmjs.com/package/dotenv))
-- ([redis](https://www.npmjs.com/package/redis))
-- ([lodash](https://www.npmjs.com/package/lodash))
+![script python](static/1.png)
 
-## Contribuição
+### Docker
+- confirmando a criação do docker com **docker build -t lucascalecrim/node-api:lts** 
+- dando push na imagem lts com **docker push lucascalecrim/node-api:lts**
 
-Contribuições são bem-vindas! Se você deseja contribuir, por favor, abra um Pull Request ou uma Issue com sugestões.
+![script python](static/2.png)
+![script python](static/3.png)
 
-## Licença
+### Ansible e Minikube
+- Ansible PLaybook **ansible-playbook -i ansible/hosts.ini ansible/build-and-push.yml**
+- Startando Minikube com Driver especifico **minikube start --driver=kvm2**
 
-Este projeto está licenciado sob a Licença MIT. Veja o arquivo LICENSE para mais detalhes.
+![script python](static/4.png)
+![script python](static/5.png)
+
+### Minikube rodando 
+![script python](static/6.png)
+
+### Seed com o o postgres (Alimentação e busca avançada)
+![script python](static/7.png)
+![script python](static/8.png)
