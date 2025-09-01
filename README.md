@@ -38,7 +38,7 @@ Os arquivos YAML na pasta `k8s/` definem como os componentes da sua aplicação 
 O Ansible é usado para automatizar o processo de implantação com "playbooks".
 
 * **`ansible/provisionamento.yml`**: Este playbook aplica os manifestos do Kubernetes na ordem correta: primeiro o banco de dados e seu serviço, depois o pod de inicialização e, por fim, a API e seu serviço.  
-* **`ansible/build-and-push.yml`**: (Não detalhado aqui) Este playbook é responsável por construir a imagem Docker da sua aplicação e enviá-la para um registro de contêiner.
+* **`ansible/build-and-push.yml`**: Este playbook é responsável por construir a imagem Docker da sua aplicação e enviá-la para um registro de contêiner.
 
 ## **5\. Como Fazer Tudo Funcionar?**
 
