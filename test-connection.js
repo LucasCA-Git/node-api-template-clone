@@ -4,10 +4,10 @@ const { Pool } = require('pg');
 
 async function testConnection() {
     const pool = new Pool({
-        host: 'localhost',
-        port: 5432,
+        host: '192.168.61.216',
+        port: 31748, 
         user: 'postgres',
-        password: 'admin', // ← SENHA CORRETA
+        password: 'admin', 
         database: 'api-db',
     });
 

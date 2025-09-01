@@ -9,8 +9,8 @@ async function testPort(port) {
     console.log(`\n🧪 Testando porta ${port}...`);
     
     const pool = new Pool({
-        host: 'localhost',
-        port: port,
+        host: '192.168.61.216',
+        port: 31748, 
         user: 'postgres',
         password: 'admin',
         database: 'api-db',
