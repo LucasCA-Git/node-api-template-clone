@@ -2,6 +2,9 @@
 
 Este projeto é uma aplicação de API Node.js utilizando JavaScript e um banco de dados PostgreSQL, orquestrados com Kubernetes e automatizados com Ansible. O processo atual foca na inicialização e no "seeding" do banco de dados, sem a funcionalidade de CRUD Via API.
 
+- Para a solução dos problemas [Ir para as soluções](./PROBLEMS.md)
+
+
 ## **1\. Tecnologias**
 
 * **Node.js**: Ambiente de execução da API.  
